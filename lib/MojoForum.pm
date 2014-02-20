@@ -25,11 +25,11 @@ sub create_thread {
       my ($delay, $user, $err, $thread) = @_;
       my $post = $app->posts->create({ content => $content });
       $user->add_posts($post, $delay->begin(0));
-      $thread->add_posts($post, $delay->begin);
+      $thread->add_posts($post, $delay->begin(0));
     },
     sub {
       my ($delay, $u, $u_err, $post, $t, $t_err) = @_;
-      $cb->($u, $t, $post) if $cb;
+      $cb->($u_err || $t_err, $u, $t, $post) if $cb;
     },
   );
   $delay->wait unless $delay->ioloop->is_running;
