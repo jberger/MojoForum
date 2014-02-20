@@ -55,7 +55,23 @@ sub populate {
   $delay->wait unless $delay->ioloop->is_running;
 }
 
-sub find_threads_by_creator {
+sub find_user_posts {
+  my ($app, $user, $cb) = @_;
+  my $delay = Mojo::IOLoop->delay(
+    $app->_find_user_step($user),
+    sub {
+      my ($delay, $err, $user) = @_;
+      $user->posts($delay->begin);
+    },
+    sub {
+      my ($delay, $err, $posts) = @_;
+      $app->$cb($err, $posts);
+    },
+  );
+  $delay->wait unless $delay->ioloop->is_running;
+};
+
+sub find_user_threads {
   my ($app, $user, $cb) = @_;
   my $delay = Mojo::IOLoop->delay(
     $app->_find_user_step($user),
