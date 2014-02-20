@@ -12,6 +12,29 @@ sub startup {
   $app->helper( posts   => sub { $_[0]->app->model->collection('post') } );
 }
 
+sub create_thread {
+  my ($app, $user, $title, $content, $cb) = @_;
+  my $delay = Mojo::IOLoop->delay(
+    $app->_find_user_step($user),
+    sub {
+      my ($delay, $err, $user) = @_;
+      my $thread = $app->threads->create({ title => $title });
+      $user->add_threads($thread, $delay->begin(0));
+    },
+    sub { 
+      my ($delay, $user, $err, $thread) = @_;
+      my $post = $app->posts->create({ content => $content });
+      $user->add_posts($post, $delay->begin(0));
+      $thread->add_posts($post, $delay->begin);
+    },
+    sub {
+      my ($delay, $u, $u_err, $post, $t, $t_err) = @_;
+      $cb->($u, $t, $post) if $cb;
+    },
+  );
+  $delay->wait unless $delay->ioloop->is_running;
+}
+
 sub populate {
   my $app = shift;
 
@@ -22,9 +45,8 @@ sub populate {
       $u->save($delay->begin(0));
     },
     sub {
-      my ($delay, $u, $err) = @_;
-      my $t = $app->threads->create({ title => 'My first thread!' });
-      $u->add_threads($t, $delay->begin);
+      my ($delay, $user, $err) = @_;
+      $app->create_thread($user, 'My first thread', 'My first post', $delay->begin);
     },
     sub {
       say 'Done';
@@ -36,15 +58,7 @@ sub populate {
 sub find_threads_by_user {
   my ($app, $user, $cb) = @_;
   my $delay = Mojo::IOLoop->delay(
-    sub {
-      my $delay = shift;
-      my $end   = $delay->begin;
-      if (ref $user) {
-        $end->(undef, undef, $user);
-      } else {
-        $user = $app->users->search({ name => $user })->single($end);
-      }
-    },
+    $app->_find_user_step($user),
     sub {
       my ($delay, $err, $user) = @_;
       $user->threads($delay->begin);
@@ -56,6 +70,19 @@ sub find_threads_by_user {
   );
   $delay->wait unless $delay->ioloop->is_running;
 };
+
+sub _find_user_step {
+  my ($app, $user) = @_;
+  return sub {
+    my $delay = shift;
+    my $end   = $delay->begin;
+    if (ref $user) {
+      $end->(undef, undef, $user);
+    } else {
+      $user = $app->users->search({ name => $user })->single($end);
+    }
+  },
+}
 
 1;
 
