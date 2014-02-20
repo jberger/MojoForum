@@ -93,9 +93,9 @@ sub _find_user_step {
     my $delay = shift;
     my $end   = $delay->begin;
     if (ref $user) {
-      $end->(undef, undef, $user);
+      Mojo::IOLoop->timer(0 => sub { $end->(undef, undef, $user) });
     } else {
-      $user = $app->users->search({ name => $user })->single($end);
+      $app->users->search({ name => $user })->single($end);
     }
   },
 }
