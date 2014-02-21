@@ -10,6 +10,11 @@ sub startup {
   $app->helper( users   => sub { $_[0]->app->model->collection('user') } );
   $app->helper( threads => sub { $_[0]->app->model->collection('thread') } );
   $app->helper( posts   => sub { $_[0]->app->model->collection('post') } );
+
+  my $r = $app->routes;
+  $r->any('/' => 'index');
+  $r->any('/login')->to('access#login');
+  $r->any('/logout')->to('access#logout');
 }
 
 sub create_thread {
@@ -55,6 +60,20 @@ sub populate {
   $delay->wait unless $delay->ioloop->is_running;
 }
 
+sub find_user {
+  my ($app, $user, $cb) = @_;
+  my $delay = Mojo::IOLoop->delay(sub{
+      my $delay = shift;
+      $app->users->search({ name => $user })->single($delay->begin);
+    },
+    sub {
+      my ($delay, $err, $user) = @_;
+      $app->$cb($err, $user);
+    }
+  );
+  $delay->wait unless $delay->ioloop->is_running;
+}
+
 sub find_user_posts {
   my ($app, $user, $cb) = @_;
   my $delay = Mojo::IOLoop->delay(
@@ -69,7 +88,7 @@ sub find_user_posts {
     },
   );
   $delay->wait unless $delay->ioloop->is_running;
-};
+}
 
 sub find_user_threads {
   my ($app, $user, $cb) = @_;
@@ -85,7 +104,7 @@ sub find_user_threads {
     },
   );
   $delay->wait unless $delay->ioloop->is_running;
-};
+}
 
 sub _find_user_step {
   my ($app, $user) = @_;
@@ -95,7 +114,7 @@ sub _find_user_step {
     if (ref $user) {
       Mojo::IOLoop->timer(0 => sub { $end->(undef, undef, $user) });
     } else {
-      $app->users->search({ name => $user })->single($end);
+      $app->find_user($user => $end);
     }
   },
 }

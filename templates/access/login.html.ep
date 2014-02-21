@@ -1,0 +1,9 @@
+% layout 'basic';
+% if (my $message = stash 'message') {
+  %= tag h3 => $message
+% }
+%= form_for 'login' => method => POST => begin
+  %= text_field 'user_name'
+  %= submit_button
+% end
+

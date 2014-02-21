@@ -1,0 +1,8 @@
+% layout 'basic';
+
+<h2>
+  % if (my $name = session('user_name')) {
+    %= tag p => "Hello $name!"
+  % }
+  Welcome to MojoForum!
+<h2>
