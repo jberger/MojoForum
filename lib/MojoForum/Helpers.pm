@@ -80,14 +80,15 @@ sub create_thread {
       my ($delay, $user, $err, $thread) = @_;
       die $err if $err;
       my $post = $c->posts->create({ content => $content });
-      $user->add_posts($post, $delay->begin(0));
-      $thread->add_posts($post, $delay->begin(0));
+      $delay->pass($user, $thread);
+      $user->add_posts($post, $delay->begin);
+      $thread->add_posts($post, $delay->begin);
     },
     sub {
-      my ($delay, $u, $u_err, $post, $t, $t_err) = @_;
+      my ($delay, $user, $thread, $u_err, $post, $t_err) = @_;
       die $u_err if $u_err;
       die $t_err if $t_err;
-      $c->$cb(undef, $u, $t, $post) if $cb;
+      $c->$cb(undef, $user, $thread, $post) if $cb;
     },
   );
   $delay->on(error => sub { $c->$cb($_[1]) if $cb });
