@@ -87,10 +87,10 @@ sub create_thread {
       my ($delay, $u, $u_err, $post, $t, $t_err) = @_;
       die $u_err if $u_err;
       die $t_err if $t_err;
-      $cb->(undef, $u, $t, $post) if $cb;
+      $c->$cb(undef, $u, $t, $post) if $cb;
     },
   );
-  $delay->on(error => sub { shift->$cb(shift) });
+  $delay->on(error => sub { $c->$cb($_[1]) if $cb });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
