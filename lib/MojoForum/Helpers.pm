@@ -19,7 +19,7 @@ sub find_user {
   my $delay = Mojo::IOLoop->delay(sub{
       my $delay = shift;
       if (ref $user) {
-        $delay->begin(0)->(undef, $user);
+        $delay->pass(undef, $user);
       } else {
         $c->app->users->search({ name => $user })->single($delay->begin);
       }
@@ -38,6 +38,7 @@ sub find_user_posts {
     sub { $c->find_user($user, shift->begin) },
     sub {
       my ($delay, $err, $user) = @_;
+      return $delay->pass($err) if $err;
       $user->posts($delay->begin);
     },
     sub {
@@ -54,6 +55,7 @@ sub find_user_threads {
     sub { $c->find_user($user, shift->begin) },
     sub {
       my ($delay, $err, $user) = @_;
+      return $delay->pass($err) if $err;
       $user->threads($delay->begin);
     },
     sub {
@@ -70,20 +72,25 @@ sub create_thread {
     sub { $c->find_user($user, shift->begin) },
     sub {
       my ($delay, $err, $user) = @_;
+      die $err if $err;
       my $thread = $c->threads->create({ title => $title });
       $user->add_threads($thread, $delay->begin(0));
     },
     sub { 
       my ($delay, $user, $err, $thread) = @_;
+      die $err if $err;
       my $post = $c->posts->create({ content => $content });
       $user->add_posts($post, $delay->begin(0));
       $thread->add_posts($post, $delay->begin(0));
     },
     sub {
       my ($delay, $u, $u_err, $post, $t, $t_err) = @_;
-      $cb->($u_err || $t_err, $u, $t, $post) if $cb;
+      die $u_err if $u_err;
+      die $t_err if $t_err;
+      $cb->(undef, $u, $t, $post) if $cb;
     },
   );
+  $delay->on(error => sub { shift->$cb(shift) });
   $delay->wait unless $delay->ioloop->is_running;
 }
 

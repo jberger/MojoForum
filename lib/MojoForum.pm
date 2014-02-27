@@ -25,10 +25,12 @@ sub populate {
     },
     sub {
       my ($delay, $user, $err) = @_;
+      die $err if $err;
       $app->create_thread($user, 'My first thread', 'My first post', $delay->begin);
     },
     sub { say 'Done' },
   );
+  $delay->on(error => sub { say pop });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
