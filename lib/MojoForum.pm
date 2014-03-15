@@ -11,7 +11,7 @@ sub startup {
   $app->plugin('Bootstrap3');
 
   my $r = $app->routes;
-  $r->any('/' => 'index');
+  $r->any('/')->to('threads#toplevel');
   $r->any('/login')->to('access#login');
   $r->any('/logout')->to('access#logout');
 }
