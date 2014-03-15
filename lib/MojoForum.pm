@@ -8,6 +8,7 @@ has model => sub { MojoForum::Model->connect('mongodb://localhost/mojoforum') };
 sub startup {
   my $app = shift;
   $app->plugin('MojoForum::Helpers');
+  $app->plugin('Bootstrap3');
 
   my $r = $app->routes;
   $r->any('/' => 'index');
