@@ -27,7 +27,8 @@ sub toplevel {
       $self->render; #('threads/toplevel');
     },
   );
-  $delay->on(error => sub { $self->render($_[-1]) });
+  $delay->on(error => sub { $self->render_exception($_[1]) });
+  $delay->wait unless $delay->ioloop->is_running;
 }
 
 1;
