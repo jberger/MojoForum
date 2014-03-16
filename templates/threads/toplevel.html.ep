@@ -5,4 +5,19 @@
     %= tag p => "Hello $name!"
   % }
   Welcome to MojoForum!
-<h2>
+</h2>
+
+<table class="table table-bordered">
+  <thead>
+    <tr><th>Title</th><th>Creator</th></tr>
+  </thead>
+  <tbody>
+    % foreach (@$threads) {
+      % my ($thread, $creator) = @$_;
+      <tr>
+        %= tag td => $thread->title
+        %= tag td => $creator->name
+      </tr>
+    % }
+  </tbody>
+</table>

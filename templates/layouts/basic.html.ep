@@ -18,8 +18,10 @@
     <%= content_for 'head' =%>
   </head>
   <body>
-    <%= content =%>
-    <%= asset 'bootstrap.js' =%>
+    <div class="container">
+      <%= content =%>
+      <%= asset 'bootstrap.js' =%>
+    </div>
   </body>
 </html>
 
