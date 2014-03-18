@@ -12,21 +12,16 @@ sub toplevel {
     sub {
       my ($delay, $err, $threads) = @_;
       die $err if $err;
+      $self->stash(threads => $threads);
       foreach my $thread (@$threads) {
-        my $end = $delay->begin(0);
-        $thread->creator(sub{
-          my ($thread, $err, $creator) = @_;
-          die $err if $err;
-          $end->([$thread, $creator]);
-        });
+        $thread->cache_creator($delay->begin);
       }
     },
     sub {
-      my ($delay, @threads) = @_;
-      $self->stash(threads => \@threads);
       $self->render; #('threads/toplevel');
     },
   );
+  # cache_creator dies on error, therefore need this handler
   $delay->on(error => sub { $self->render_exception($_[1]) });
   $delay->wait unless $delay->ioloop->is_running;
 }

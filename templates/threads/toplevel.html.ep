@@ -12,11 +12,10 @@
     <tr><th>Title</th><th>Creator</th></tr>
   </thead>
   <tbody>
-    % foreach (@$threads) {
-      % my ($thread, $creator) = @$_;
+    % foreach my $thread (@$threads) {
       <tr>
         %= tag td => $thread->title
-        %= tag td => $creator->name
+        %= tag td => $thread->cached_creator->name
       </tr>
     % }
   </tbody>
