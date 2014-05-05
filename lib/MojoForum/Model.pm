@@ -1,5 +1,5 @@
 package MojoForum::Model;
-use Mandel;
+use Mojo::Base 'Mandel';
 
 1;
 

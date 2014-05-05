@@ -12,6 +12,7 @@ sub startup {
 
   my $r = $app->routes;
   $r->any('/')->to('threads#toplevel');
+  $r->any('/thread/:thread_id')->to('threads#single')->name('thread');
   $r->any('/login')->to('access#login');
   $r->any('/logout')->to('access#logout');
 }

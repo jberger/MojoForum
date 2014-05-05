@@ -14,7 +14,9 @@
   <tbody>
     % foreach my $thread (@$threads) {
       <tr>
-        %= tag td => $thread->title
+        %= tag td => begin 
+          %= link_to $thread->title => thread => {thread_id => $thread->id}
+        % end
         %= tag td => $thread->cached_creator->name
       </tr>
     % }

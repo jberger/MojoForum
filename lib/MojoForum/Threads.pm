@@ -1,6 +1,36 @@
 package MojoForum::Threads;
 
 use Mojo::Base 'Mojolicious::Controller';
+use Mango::BSON 'bson_oid';
+
+sub single {
+  my $self = shift;
+  my $id = $self->stash('thread_id');
+  $self->render_later;
+  my $delay = Mojo::IOLoop->delay(
+    sub {
+      my $delay = shift;
+      $self->threads->search({ _id => bson_oid($id) })->single($delay->begin);
+    },
+    sub {
+      my ($delay, $err, $thread) = @_;
+      die $err if $err;
+      $self->stash( thread => $thread );
+      $thread->posts($delay->begin);
+    },
+    sub {
+      my ($delay, $err, $posts) = @_;
+      die $err if $err;
+      $self->stash( posts => $posts );
+      $self->render;
+    },
+  );
+  $delay->on( error => sub {
+    $self->app->log->error($_[1]);
+    $self->render_not_found;
+  } );
+  $delay->wait unless $delay->ioloop->is_running;
+}
 
 sub toplevel {
   my $self = shift;

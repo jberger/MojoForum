@@ -1,0 +1,22 @@
+% layout 'basic';
+
+<h2>
+  % if (my $name = session('user_name')) {
+    %= tag p => "Hello $name!"
+  % }
+  %= tag p => $thread->title
+</h2>
+
+<table class="table table-bordered">
+  <thead>
+    <tr><th>Author</th><th>Post</th></tr>
+  </thead>
+  <tbody>
+    % foreach my $post (@$posts) {
+      <tr>
+        %= tag td => 'Someone'
+        %= tag td => $post->content
+      </tr>
+    % }
+  </tbody>
+</table>
