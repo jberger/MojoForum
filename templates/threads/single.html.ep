@@ -1,8 +1,9 @@
 % layout 'basic';
+% my $user = session('user_name');
 
 <h2>
-  % if (my $name = session('user_name')) {
-    %= tag p => "Hello $name!"
+  % if ($user) {
+    %= tag p => "Hello $user!"
   % }
   %= tag p => $thread->title
 </h2>
@@ -14,8 +15,19 @@
   <tbody>
     % foreach my $post (@$posts) {
       <tr>
-        %= tag td => 'Someone'
+        %= tag td => $post->cached_author->name
         %= tag td => $post->content
+      </tr>
+    % }
+    % if ($user) {
+      <tr>
+        %= tag td => $user
+        %= tag td => begin
+          %= form_for 'add_post' => { thread => $thread->id } => method => POST => begin
+            %= text_area 'content'
+            %= submit_button
+          % end
+        % end
       </tr>
     % }
   </tbody>

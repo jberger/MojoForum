@@ -1,6 +1,7 @@
 package MojoForum::Helpers;
 
 use Mojo::Base 'Mojolicious::Plugin';
+use Mango::BSON 'bson_oid';
 
 sub register {
   my ($self, $app) = @_;
@@ -11,7 +12,11 @@ sub register {
   $app->helper( find_user => \&find_user );
   $app->helper( find_user_posts => \&find_user_posts );
   $app->helper( find_user_threads => \&find_user_threads );
+
   $app->helper( create_thread => \&create_thread );
+  $app->helper( find_thread => \&find_thread );
+
+  $app->helper( add_post => \&add_post );
 }
 
 sub find_user {
@@ -27,6 +32,24 @@ sub find_user {
     sub {
       my ($delay, $err, $user) = @_;
       $c->$cb($err, $user);
+    }
+  );
+  $delay->wait unless $delay->ioloop->is_running;
+}
+
+sub find_thread {
+  my ($c, $thread, $cb) = @_;
+  my $delay = Mojo::IOLoop->delay(sub{
+      my $delay = shift;
+      if (ref $thread) {
+        $delay->pass(undef, $thread);
+      } else {
+        $c->threads->search({ _id => bson_oid($thread) })->single($delay->begin);
+      }
+    },
+    sub {
+      my ($delay, $err, $thread) = @_;
+      $c->$cb($err, $thread);
     }
   );
   $delay->wait unless $delay->ioloop->is_running;
@@ -63,6 +86,33 @@ sub find_user_threads {
       $c->$cb($err, $threads);
     },
   );
+  $delay->wait unless $delay->ioloop->is_running;
+}
+
+sub add_post {
+  my ($c, $thread, $user, $content, $cb) = @_;
+  my $delay = Mojo::IOLoop->delay(
+    sub {
+      my $delay = shift;
+      $c->find_user($user,     $delay->begin);
+      $c->find_thread($thread, $delay->begin);
+    },
+    sub {
+      my ($delay, $u_err, $user, $t_err, $thread) = @_;
+      die $u_err if $u_err;
+      die $t_err if $t_err;
+      my $post = $c->posts->create({ content => $content });
+      $user->add_posts($post,   $delay->begin);
+      $thread->add_posts($post, $delay->begin);
+    },
+    sub {
+      my ($delay, $u_err, $post, $t_err) = @_;
+      die $u_err if $u_err;
+      die $t_err if $t_err;
+      $c->$cb(undef, $post) if $cb;
+    },
+  );
+  $delay->on(error => sub { $c->$cb($_[1]) if $cb });
   $delay->wait unless $delay->ioloop->is_running;
 }
 

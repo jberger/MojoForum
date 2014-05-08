@@ -1,7 +1,31 @@
 package MojoForum::Threads;
 
 use Mojo::Base 'Mojolicious::Controller';
-use Mango::BSON 'bson_oid';
+
+sub post {
+  my $self = shift;
+  my $id   = $self->stash('thread_id');
+  my $user = $self->session('user_name');
+  return $self->render( text => 'forbidden' ) unless $user;
+  $self->render_later;
+  my $content = $self->param('content');
+  my $delay = Mojo::IOLoop->delay(
+    sub {
+      my $delay = shift;
+      $self->add_post( $id, $user, $content, $delay->begin );
+    },
+    sub {
+      my ($delay, $err, $post) = @_;
+      die $err if $err;
+      $self->redirect_to( thread => {'thread_id' => $id} );
+    },
+  );
+  $delay->on( error => sub {
+    $self->app->log->error($_[1]);
+    $self->render_not_found;
+  } );
+  $delay->wait unless $delay->ioloop->is_running;
+}
 
 sub single {
   my $self = shift;
@@ -10,7 +34,7 @@ sub single {
   my $delay = Mojo::IOLoop->delay(
     sub {
       my $delay = shift;
-      $self->threads->search({ _id => bson_oid($id) })->single($delay->begin);
+      $self->find_thread( $id => $delay->begin );
     },
     sub {
       my ($delay, $err, $thread) = @_;
@@ -22,6 +46,9 @@ sub single {
       my ($delay, $err, $posts) = @_;
       die $err if $err;
       $self->stash( posts => $posts );
+      $_->cache_author($delay->begin) for @$posts;
+    },
+    sub {
       $self->render;
     },
   );
