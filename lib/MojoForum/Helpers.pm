@@ -5,6 +5,8 @@ use Mango::BSON 'bson_oid';
 
 sub register {
   my ($self, $app) = @_;
+  $app->helper( delay => \&delay );
+  
   $app->helper( users   => sub { $_[0]->app->model->collection('user') } );
   $app->helper( threads => sub { $_[0]->app->model->collection('thread') } );
   $app->helper( posts   => sub { $_[0]->app->model->collection('post') } );
@@ -19,9 +21,24 @@ sub register {
   $app->helper( add_post => \&add_post );
 }
 
+sub delay {
+  my $self = shift;
+  my $opts = ref $_[0] eq 'HASH' ? shift : {};
+  my $delay = Mojo::IOLoop->delay(@_);
+  for my $event (keys %$opts) {
+    $delay->on( $event => $opts->{$event} );
+  }
+  unless ($opts->{no_wait}) {
+    $delay->wait unless $delay->ioloop->is_running;
+  }
+  return $delay;
+}
+
 sub find_user {
   my ($c, $user, $cb) = @_;
-  my $delay = Mojo::IOLoop->delay(sub{
+  $c->delay(
+    { error => $cb },
+    sub{
       my $delay = shift;
       if (ref $user) {
         $delay->pass(undef, $user);
@@ -34,12 +51,13 @@ sub find_user {
       $c->$cb($err, $user);
     }
   );
-  $delay->wait unless $delay->ioloop->is_running;
 }
 
 sub find_thread {
   my ($c, $thread, $cb) = @_;
-  my $delay = Mojo::IOLoop->delay(sub{
+  $c->delay(
+    { error => $cb },
+    sub{
       my $delay = shift;
       if (ref $thread) {
         $delay->pass(undef, $thread);
@@ -52,16 +70,16 @@ sub find_thread {
       $c->$cb($err, $thread);
     }
   );
-  $delay->wait unless $delay->ioloop->is_running;
 }
 
 sub find_user_posts {
   my ($c, $user, $cb) = @_;
-  my $delay = Mojo::IOLoop->delay(
+  $c->delay(
+    { error => $cb },
     sub { $c->find_user($user, shift->begin) },
     sub {
       my ($delay, $err, $user) = @_;
-      return $delay->pass($err) if $err;
+      die $err if $err;
       $user->posts($delay->begin);
     },
     sub {
@@ -69,16 +87,16 @@ sub find_user_posts {
       $c->$cb($err, $posts);
     },
   );
-  $delay->wait unless $delay->ioloop->is_running;
 }
 
 sub find_user_threads {
   my ($c, $user, $cb) = @_;
-  my $delay = Mojo::IOLoop->delay(
+  $c->delay(
+    { error => $cb },
     sub { $c->find_user($user, shift->begin) },
     sub {
       my ($delay, $err, $user) = @_;
-      return $delay->pass($err) if $err;
+      die $err if $err;
       $user->threads($delay->begin);
     },
     sub {
@@ -86,12 +104,12 @@ sub find_user_threads {
       $c->$cb($err, $threads);
     },
   );
-  $delay->wait unless $delay->ioloop->is_running;
 }
 
 sub add_post {
   my ($c, $thread, $user, $content, $cb) = @_;
-  my $delay = Mojo::IOLoop->delay(
+  $c->delay(
+    { error => $cb },
     sub {
       my $delay = shift;
       $c->find_user($user,     $delay->begin);
@@ -112,13 +130,12 @@ sub add_post {
       $c->$cb(undef, $post) if $cb;
     },
   );
-  $delay->on(error => sub { $c->$cb($_[1]) if $cb });
-  $delay->wait unless $delay->ioloop->is_running;
 }
 
 sub create_thread {
   my ($c, $user, $title, $content, $cb) = @_;
-  my $delay = Mojo::IOLoop->delay(
+  $c->delay(
+    { error => $cb },
     sub { $c->find_user($user, shift->begin) },
     sub {
       my ($delay, $err, $user) = @_;
@@ -141,8 +158,6 @@ sub create_thread {
       $c->$cb(undef, $user, $thread, $post) if $cb;
     },
   );
-  $delay->on(error => sub { $c->$cb($_[1]) if $cb });
-  $delay->wait unless $delay->ioloop->is_running;
 }
 
 1;
