@@ -3,7 +3,8 @@ use Mojo::Base 'Mojolicious';
 
 use MojoForum::Model ();
 
-has model => sub { MojoForum::Model->connect('mongodb://localhost/mojoforum') };
+has db_url => 'mongodb://localhost/mojoforum';
+has model  => sub { MojoForum::Model->connect(shift->db_url) };
 
 sub startup {
   my $app = shift;
