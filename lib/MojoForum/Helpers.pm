@@ -34,6 +34,7 @@ sub find_user {
       $c->$cb($err, $user);
     }
   );
+  $delay->on(error => sub { $c->$cb($_[1]) });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
@@ -52,6 +53,7 @@ sub find_thread {
       $c->$cb($err, $thread);
     }
   );
+  $delay->on(error => sub { $c->$cb($_[1]) });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
@@ -61,7 +63,7 @@ sub find_user_posts {
     sub { $c->find_user($user, shift->begin) },
     sub {
       my ($delay, $err, $user) = @_;
-      return $delay->pass($err) if $err;
+      die $err if $err;
       $user->posts($delay->begin);
     },
     sub {
@@ -69,6 +71,7 @@ sub find_user_posts {
       $c->$cb($err, $posts);
     },
   );
+  $delay->on(error => sub { $c->$cb($_[1]) });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
@@ -78,7 +81,7 @@ sub find_user_threads {
     sub { $c->find_user($user, shift->begin) },
     sub {
       my ($delay, $err, $user) = @_;
-      return $delay->pass($err) if $err;
+      die $err if $err;
       $user->threads($delay->begin);
     },
     sub {
@@ -86,6 +89,7 @@ sub find_user_threads {
       $c->$cb($err, $threads);
     },
   );
+  $delay->on(error => sub { $c->$cb($_[1]) });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
@@ -109,10 +113,10 @@ sub add_post {
       my ($delay, $u_err, $post, $t_err) = @_;
       die $u_err if $u_err;
       die $t_err if $t_err;
-      $c->$cb(undef, $post) if $cb;
+      $c->$cb(undef, $post);
     },
   );
-  $delay->on(error => sub { $c->$cb($_[1]) if $cb });
+  $delay->on(error => sub { $c->$cb($_[1]) });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
@@ -138,10 +142,10 @@ sub create_thread {
       my ($delay, $user, $thread, $u_err, $post, $t_err) = @_;
       die $u_err if $u_err;
       die $t_err if $t_err;
-      $c->$cb(undef, $user, $thread, $post) if $cb;
+      $c->$cb(undef, $user, $thread, $post);
     },
   );
-  $delay->on(error => sub { $c->$cb($_[1]) if $cb });
+  $delay->on(error => sub { $c->$cb($_[1]) });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
