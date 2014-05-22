@@ -15,8 +15,8 @@ sub register {
 
   $app->helper( create_thread => \&create_thread );
   $app->helper( find_thread => \&find_thread );
-
   $app->helper( add_post => \&add_post );
+  $app->helper( populate => \&populate );
 }
 
 sub find_user {
@@ -146,6 +146,25 @@ sub create_thread {
     },
   );
   $delay->on(error => sub { $c->$cb($_[1]) });
+  $delay->wait unless $delay->ioloop->is_running;
+}
+
+sub populate {
+  my $c = shift;
+  my $delay = Mojo::IOLoop->delay(
+    sub {
+      my $delay = shift;
+      my $u = $c->users->create({ name => 'Joel' });
+      $u->save($delay->begin(0));
+    },
+    sub {
+      my ($delay, $user, $err) = @_;
+      die $err if $err;
+      $c->create_thread($user, 'My first thread', 'My first post', $delay->begin);
+    },
+    sub { say 'Done' },
+  );
+  $delay->on(error => sub { say pop });
   $delay->wait unless $delay->ioloop->is_running;
 }
 
