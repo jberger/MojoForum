@@ -8,7 +8,7 @@ my $app = $t->app;
 
 $app->db_url('mongodb://localhost/test');
 $app->model->storage->db->command('dropDatabase');
-$app->populate;
+$app->users->create({name => "Joel"})->save;
 
 my ($err, $user);
 $app->find_user("Joel" => sub {
@@ -18,6 +18,7 @@ $app->find_user("Joel" => sub {
 
 is $err, undef, 'No error';
 isa_ok $user, 'MojoForum::Model::User';
+is $user->name, "Joel";
 
 done_testing;
 
