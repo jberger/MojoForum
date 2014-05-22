@@ -26,7 +26,7 @@ sub find_user {
       if (ref $user) {
         $delay->pass(undef, $user);
       } else {
-        $c->app->users->search({ name => $user })->single($delay->begin);
+        $c->users->search({ name => $user })->single($delay->begin);
       }
     },
     sub {
