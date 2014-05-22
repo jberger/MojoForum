@@ -19,6 +19,14 @@
   </head>
   <body>
     <div class="container">
+      <h2>
+        % my $name = session 'user_name' or '';
+        Welcome to MojoForum <%= $name %>!
+        % if ($name) {
+          %= link_to 'Log Out' => 'logout'
+        % } else {
+          %= link_to 'Log In'  => 'login'
+        % }
       <%= content =%>
       <%= asset 'bootstrap.js' =%>
     </div>
