@@ -20,7 +20,7 @@
   <body>
     <div class="container">
       <h2>
-        % my $name = session 'user_name' or '';
+        % my $name = session('user_name') || '';
         Welcome to MojoForum <%= $name %>!
         % if ($name) {
           %= link_to 'Log Out' => 'logout'

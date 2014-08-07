@@ -1,4 +1,4 @@
-package MojoForum::Access;
+package MojoForum::Controller::Access;
 
 use Mojo::Base 'Mojolicious::Controller';
 

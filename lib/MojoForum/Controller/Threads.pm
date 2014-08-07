@@ -1,4 +1,4 @@
-package MojoForum::Threads;
+package MojoForum::Controller::Threads;
 
 use Mojo::Base 'Mojolicious::Controller';
 
